@@ -122,6 +122,38 @@ def pull_min_stay_details_from_ru(property_id):
     data_dict = xmltodict.parse(response)
     return data_dict
 
+def pull_property_types():
+    xml_payload = f"""
+
+                    <Pull_ListPropTypes_RQ>
+                        <Authentication>
+                            <UserName>{os.getenv('RU_USERNAME')}</UserName>
+                            <Password>{os.getenv('RU_PASSWORD')}</Password>
+                        </Authentication>
+                    </Pull_ListPropTypes_RQ>
+                    """
+    # Call the function to make the XML request
+    response = make_xml_request(xml_payload)
+    data_dict = xmltodict.parse(response)
+    return data_dict
+
+def pull_amenities():
+    xml_payload = f"""
+
+                    <Pull_ListAmenities_RQ>
+                        <Authentication>
+                        <UserName>{os.getenv('RU_USERNAME')}</UserName>
+                        <Password>{os.getenv('RU_PASSWORD')}</Password>
+                        </Authentication>
+                    </Pull_ListAmenities_RQ>
+                    """
+    # Call the function to make the XML request
+    response = make_xml_request(xml_payload)
+    data_dict = xmltodict.parse(response)
+    return data_dict
+
+
+
 
 
 
