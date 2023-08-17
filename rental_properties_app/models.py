@@ -75,6 +75,9 @@ class Propertycharges(models.Model):
     down_payment_amount = models.FloatField(null=True)
     security_deposit_type = models.CharField(null=True, max_length=50)
     security_deposit_amount = models.FloatField(null=True)
+    extra_charge_type = models.CharField(null=True, max_length=50)
+    name = models.CharField(null=True, max_length=50)
+    applied_to = models.CharField(null=True, max_length=50)
 
     class Meta:
         db_table = "property_charges"
