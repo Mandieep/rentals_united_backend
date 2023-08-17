@@ -3,6 +3,7 @@ import os
 import xmltodict
 from dotenv import load_dotenv
 load_dotenv()
+import datetime
 
 def make_xml_request(xml_payload):
     # Replace with the actual URL for sending the XML request
@@ -22,7 +23,6 @@ def make_xml_request(xml_payload):
 
 def pull_list_of_properties_from_ru():
     data_dicts = []
-    print("-----------RU_USERNAME-------", os.getenv('RU_USERNAME'), os.getenv('RU_PASSWORD'))
 
     xml_payload = f"""
                     <Pull_ListOwnerProp_RQ>
@@ -36,9 +36,7 @@ def pull_list_of_properties_from_ru():
                 """
     # Call the function to make the XML request
     response = make_xml_request(xml_payload)
-    print("----------response------", response)
     data_dict = xmltodict.parse(response)
-    print("----------data_dict------", data_dict)
     pull_list = data_dict.get('Pull_ListOwnerProp_RS')
     properties = pull_list.get('Properties')
     property_list = properties.get('Property')
@@ -53,7 +51,7 @@ def pull_list_of_properties_from_ru():
     return data_dicts
 
 def pull_prices_of_property_from_ru(property_id, date_from, date_to):
-    print('property_id...........', property_id)
+    # print('property_id...........', property_id)
 
     xml_payload = f"""
                     <Pull_ListPropertyPrices_RQ>
@@ -106,6 +104,8 @@ def pull_list_of_calendar_days(property_id, date_from, date_to):
     return data_dict
 
 def pull_min_stay_details_from_ru(property_id):
+    current_year_date = datetime.datetime.today()
+    next_year_date = current_year_date + datetime.timedelta(days=365)
     xml_payload = f"""
                         <Pull_ListPropertyMinStay_RQ>
                             <Authentication>
@@ -113,9 +113,29 @@ def pull_min_stay_details_from_ru(property_id):
                                 <Password>{os.getenv('RU_PASSWORD')}</Password>
                             </Authentication>
                             <PropertyID>{property_id}</PropertyID>
-                            <DateFrom>2023-07-01</DateFrom>
-                            <DateTo>2023-08-30</DateTo>
+                            <DateFrom>{current_year_date.strftime('%Y-%m-%d')}</DateFrom>
+                            <DateTo>{next_year_date.strftime('%Y-%m-%d')}</DateTo>
                         </Pull_ListPropertyMinStay_RQ>
+                    """
+    # Call the function to make the XML request
+    response = make_xml_request(xml_payload)
+    data_dict = xmltodict.parse(response)
+    return data_dict
+
+def pull_property_prices_from_ru(property_id):
+    current_year_date = datetime.datetime.today()
+    next_year_date = current_year_date + datetime.timedelta(days=365)
+    xml_payload = f"""
+                        <Pull_ListPropertyPrices_RQ>
+                            <Authentication>
+                                <UserName>{os.getenv('RU_USERNAME')}</UserName>
+                                <Password>{os.getenv('RU_PASSWORD')}</Password>
+                            </Authentication>
+                            <PropertyID>{property_id}</PropertyID>
+                            <DateFrom>{current_year_date.strftime('%Y-%m-%d')}</DateFrom>
+                            <DateTo>{next_year_date.strftime('%Y-%m-%d')}</DateTo>
+                            <PricingModelMode>0</PricingModelMode>
+                        </Pull_ListPropertyPrices_RQ>
                     """
     # Call the function to make the XML request
     response = make_xml_request(xml_payload)

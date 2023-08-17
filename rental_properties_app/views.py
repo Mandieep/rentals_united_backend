@@ -1,8 +1,8 @@
 from rental_properties_app.amenities.update_amenities import UpdateAmenities
+from rental_properties_app.availability.update_availability import UpdateAvailability
 from rental_properties_app.models import Amenities, Propertybasicinfo
 from rental_properties_app.rental_properties import pull_amenities, pull_list_of_properties_from_ru, pull_property_types
 # from rental_properties_app.decorators import access_authorized_users_only
-# from rental_properties_app.models import Propertyinfo
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
@@ -21,7 +21,6 @@ def sync_properties_from_rental(request):
     try:
         if request.method == 'GET':
             data_dicts = pull_list_of_properties_from_ru()
-            property_infos = []
 
             for data_dict in data_dicts:
 
@@ -77,10 +76,13 @@ def sync_properties_from_rental(request):
                         detailed_location=d_location.get('#text'),
                         detailed_location_id=d_location.get('@TypeID'),
                         license_number=property.get('LicenseNumber'), license_toggle=1)
+                    property_info.save()
                     logger.info(
                         f"Property basic info saved in database successfully.")
-                    property_infos.append(property_info)
-            Propertybasicinfo.objects.bulk_create(property_infos)
+                    availability_obj = UpdateAvailability()
+                    availability_obj.update_availability(property_info)
+                    logger.info(
+                        f"Property availability saved in database successfully.")
 
             response_dict = response_handler.success_response(
                         True, 200)
