@@ -48,7 +48,7 @@ class Propertyimages(models.Model):
     class Meta:
         db_table = "property_images"
 
-class Propertyavailability(models.Model):
+class Propertyavailabilityprices(models.Model):
     propertyinfo = models.ForeignKey(
         Propertybasicinfo, on_delete=models.CASCADE, null=True)
     date_from = models.DateTimeField(null=True)
@@ -61,20 +61,7 @@ class Propertyavailability(models.Model):
     season = models.CharField(null=True, max_length=50)
 
     class Meta:
-        db_table = "property_availability"
-
-class Propertyprices(models.Model):
-    propertyinfo = models.ForeignKey(
-        Propertybasicinfo, on_delete=models.CASCADE, null=True)
-    season = models.CharField(null=True, max_length=50)
-    date_from = models.DateTimeField(null=True)
-    date_to = models.DateTimeField(null=True)
-    no_of_guests = models.IntegerField(null=True)
-    daily_price = models.FloatField(null=True)
-    extra_guest_price = models.FloatField(null=True)
-
-    class Meta:
-        db_table = "property_prices"
+        db_table = "property_availability_prices"
 
 class Propertycharges(models.Model):
     propertyinfo = models.ForeignKey(
