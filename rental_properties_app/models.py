@@ -53,8 +53,6 @@ class Propertyavailability(models.Model):
         Propertybasicinfo, on_delete=models.CASCADE, null=True)
     date_from = models.DateTimeField(null=True)
     date_to = models.DateTimeField(null=True)
-    no_of_units = models.IntegerField(null=True)
-    changeover = models.IntegerField(null=True)
     status = models.CharField(null=True, max_length=50)
     is_price = models.BooleanField(default=False)
     daily_price = models.FloatField(null=True)
@@ -73,7 +71,6 @@ class Propertyprices(models.Model):
     date_to = models.DateTimeField(null=True)
     no_of_guests = models.IntegerField(null=True)
     daily_price = models.FloatField(null=True)
-    min_stay = models.IntegerField(null=True)
     extra_guest_price = models.FloatField(null=True)
 
     class Meta:
