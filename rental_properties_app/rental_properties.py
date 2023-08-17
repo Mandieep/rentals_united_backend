@@ -36,9 +36,7 @@ def pull_list_of_properties_from_ru():
                 """
     # Call the function to make the XML request
     response = make_xml_request(xml_payload)
-    print("----------response------", response)
     data_dict = xmltodict.parse(response)
-    print("----------data_dict------", data_dict)
     pull_list = data_dict.get('Pull_ListOwnerProp_RS')
     properties = pull_list.get('Properties')
     property_list = properties.get('Property')

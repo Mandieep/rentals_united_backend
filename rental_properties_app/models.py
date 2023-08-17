@@ -90,10 +90,12 @@ class Propertycheckincheckout(models.Model):
     checkin_time_to = models.CharField(default="00:00", max_length=50)
     checkout_time = models.CharField(default="00:00", max_length=50)
     checkinplace = models.CharField(default="at_the_apartment", max_length=50)
-    fee_type = models.CharField(null=True, max_length=50)
-    fee_from = models.CharField(default="00:00", max_length=50)
-    fee_to = models.CharField(default="00:00", max_length=50)
-    fee_cost = models.FloatField(default=0)
+    late_arrival_fee_from = models.CharField(default="00:00", max_length=50)
+    late_arrival_fee_to = models.CharField(default="00:00", max_length=50)
+    late_arrival_fee_cost = models.FloatField(default=0)
+    early_departure_fee_from = models.CharField(default="00:00", max_length=50)
+    early_departure_fee_to = models.CharField(default="00:00", max_length=50)
+    early_departure_fee_cost = models.FloatField(default=0)
 
     class Meta:
         db_table = "property_checkin_checkout"
