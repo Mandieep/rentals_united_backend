@@ -10,6 +10,7 @@ class Amenities(models.Model):
         db_table = "property_amenities"
 
 class Propertybasicinfo(models.Model):
+    property_id = models.IntegerField(null=True)
     property_name = models.CharField(max_length=50)
     property_type = models.CharField(max_length=50)
     can_sleep_max = models.IntegerField(null=True)

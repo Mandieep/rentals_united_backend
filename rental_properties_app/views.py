@@ -1,3 +1,4 @@
+from rental_properties_app.amenities.update_amenities import UpdateAmenities
 from rental_properties_app.models import Amenities, Propertybasicinfo
 from rental_properties_app.rental_properties import pull_amenities, pull_list_of_properties_from_ru, pull_property_types
 # from rental_properties_app.decorators import access_authorized_users_only
@@ -20,32 +21,31 @@ def sync_properties_from_rental(request):
     try:
         if request.method == 'GET':
             data_dicts = pull_list_of_properties_from_ru()
-            print('data_dict..............', data_dicts)
+            property_infos = []
 
             for data_dict in data_dicts:
 
                 # fetch values.
                 list_of_details = data_dict.get('Pull_ListSpecProp_RS')
                 property = list_of_details.get('Property')
-                print('property...........', property)
                 rental_united_id = property.get('rental_united_id', None)
-                print('rental_united_id...........', rental_united_id)
                 d_location = property.get('DetailedLocationID')
-                print('d_location...........', d_location)
                 coordinates = property.get('Coordinates')
-                print('coordinates...........', coordinates)
                 arrival_instructions = property.get('ArrivalInstructions')
-                print('arrival_instructions...........', arrival_instructions)
                 checkin_out = property.get('CheckInOut')
-                print('checkin_out...........', checkin_out)
                 deposit = property.get('Deposit')
-                print('deposit...........', deposit)
                 security_deposit = property.get('SecurityDeposit')
-                print('security_deposit...........', security_deposit)
-                # amenities = property.get('Amenities')
-                # amenty = amenities.get('Amenity')
-                # amenity_ids = [i.get('#text') for i in amenty]
-                # print('amenity_ids...........', amenity_ids)
+                amenities = property.get('Amenities')
+                amenty = None
+                if amenities is not None:
+                    amenty = amenities.get('Amenity')
+                if amenty is not None:
+                    if type(amenty)== list:
+                        amenity_ids = [i.get('#text') for i in amenty]
+                    else:
+                        amenity_ids = [amenty.get('#text')]
+                    update_amenity_obj = UpdateAmenities()
+                    update_amenity_obj.update_property_ids(amenity_ids, data_dict.get('property_id'))
                 descriptions = property.get('Descriptions')
                 if descriptions == None:
                     description =None
@@ -55,34 +55,32 @@ def sync_properties_from_rental(request):
                     final_desciption = None
                 else:
                     final_desciption = description[0].get('Text') if type(description) == list else description.get('Text')
-                print('final_desciption...........', final_desciption)
+                # print('final_desciption...........', final_desciption)
+
                 # check if property name already exists or not, if not then create new property
                 table_property_names = Propertybasicinfo.objects.all().values_list('property_name', flat=True)
-                if property in table_property_names:
-                    response_dict = response_handler.msg_response(
-                        'Property name already exists', 422)
-                    return Response(response_dict, status.HTTP_422_UNPROCESSABLE_ENTITY)
+                if property.get('Name') in table_property_names:
+                    logger.info(
+                        f"Duplicate property name.", property)
+                    continue
                 else:
                     property_type_dict = pull_property_types()
-                    amenities_dict = pull_amenities()
-                    print('property_type_dict.............', property_type_dict)
-                    print('amenities_dict.............', amenities_dict)
                     prop_types_rs = property_type_dict.get('Pull_ListPropTypes_RS')
                     property_types = prop_types_rs.get('PropertyTypes')
                     property_type = property_types.get('PropertyType')
                     property_type_name = [i.get('#text') for i in property_type if i.get('@PropertyTypeID') == property.get('PropertyTypeID')]
                     property_info = Propertybasicinfo(
-                        property_name=property.get('Name'), property_type=property_type_name[0],
+                        property_id = data_dict.get('property_id'), property_name=property.get('Name'), property_type=property_type_name[0],
                         can_sleep_max=property.get('CanSleepMax'), floor=property.get('Floor'),
                         size=property.get('Space'), street=property.get('Street'), zip_code=property.get('ZipCode'),
                         longitude=coordinates.get('Longitude'), latitude=coordinates.get('Latitude'),
                         detailed_location=d_location.get('#text'),
                         detailed_location_id=d_location.get('@TypeID'),
                         license_number=property.get('LicenseNumber'), license_toggle=1)
-                    property_info.save()
                     logger.info(
                         f"Property basic info saved in database successfully.")
-                break
+                    property_infos.append(property_info)
+            Propertybasicinfo.objects.bulk_create(property_infos)
 
             response_dict = response_handler.success_response(
                         True, 200)
@@ -103,12 +101,15 @@ def save_amenities_in_db(request):
     try:
         if request.method == 'GET':
             amenities_dict = pull_amenities()
-            print('amenities_dict.............', amenities_dict)
             amenities_rs = amenities_dict.get('Pull_ListAmenities_RS')
             amenities = amenities_rs.get('Amenities')
             amenity_list = amenities.get('Amenity')
             amenity_instances = []
+            db_amenities = Amenities.objects.all()
+            amenity_ids = [int(amenity.amenity_id) for amenity in db_amenities]
             for amenity in amenity_list:
+                if int(amenity.get('@AmenityID')) in amenity_ids:
+                    continue
                 amenity_ins = Amenities(amenity_id = amenity.get('@AmenityID'), amenity = amenity.get('#text'))
                 amenity_instances.append(amenity_ins)
             Amenities.objects.bulk_create(amenity_instances)
