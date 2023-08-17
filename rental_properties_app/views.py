@@ -1,5 +1,7 @@
 from rental_properties_app.amenities.update_amenities import UpdateAmenities
 from rental_properties_app.availability.update_availability import UpdateAvailability
+from rental_properties_app.checkin_checkout.checkin_checkout import CheckinCheckout
+from rental_properties_app.description.save_description import SaveDescription
 from rental_properties_app.models import Amenities, Propertybasicinfo
 from rental_properties_app.rental_properties import pull_amenities, pull_list_of_properties_from_ru, pull_property_types
 # from rental_properties_app.decorators import access_authorized_users_only
@@ -8,9 +10,11 @@ from rest_framework.response import Response
 from rest_framework import status
 from rental_properties_app.response import Responsehandler
 from logger_setup import logger
+import datetime
 
 response_handler = Responsehandler()
-# Create your views here.
+save_description_obj = SaveDescription()
+checkin_checkout_obj = CheckinCheckout()
 
 @api_view(['GET'])
 def sync_properties_from_rental(request):
@@ -34,6 +38,8 @@ def sync_properties_from_rental(request):
                 checkin_out = property.get('CheckInOut')
                 deposit = property.get('Deposit')
                 security_deposit = property.get('SecurityDeposit')
+
+                # save amenities in db
                 amenities = property.get('Amenities')
                 amenty = None
                 if amenities is not None:
@@ -45,16 +51,6 @@ def sync_properties_from_rental(request):
                         amenity_ids = [amenty.get('#text')]
                     update_amenity_obj = UpdateAmenities()
                     update_amenity_obj.update_property_ids(amenity_ids, data_dict.get('property_id'))
-                descriptions = property.get('Descriptions')
-                if descriptions == None:
-                    description =None
-                else:
-                    description = descriptions.get('Description')
-                if description == None:
-                    final_desciption = None
-                else:
-                    final_desciption = description[0].get('Text') if type(description) == list else description.get('Text')
-                # print('final_desciption...........', final_desciption)
 
                 # check if property name already exists or not, if not then create new property
                 table_property_names = Propertybasicinfo.objects.all().values_list('property_name', flat=True)
@@ -83,6 +79,26 @@ def sync_properties_from_rental(request):
                     availability_obj.update_availability(property_info)
                     logger.info(
                         f"Property availability saved in database successfully.")
+
+                    # save description in db
+                    basic_info_db_obj = Propertybasicinfo.objects.get(property_id = data_dict.get('property_id'))
+                    descriptions = property.get('Descriptions')
+                    final_description = None
+                    if descriptions is not None:
+                        description = descriptions.get('Description')
+
+                    if description is not None:
+                        if type(description) == list:
+                            for desc in description:
+                                if int(desc.get('@LanguageID')) == 1:
+                                    final_description = desc.get('Text')
+                                    break
+                        else:
+                            final_description = description.get('Text') if int(description.get('@LanguageID')) == 1 else None
+                    save_description_obj.save_description_in_db(final_description, basic_info_db_obj)
+
+                    # save checkin checkout in db.
+                    checkin_checkout_obj.save_checkin_checkout(basic_info_db_obj, property)
 
             response_dict = response_handler.success_response(
                         True, 200)
