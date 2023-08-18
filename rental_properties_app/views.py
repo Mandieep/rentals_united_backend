@@ -1,10 +1,10 @@
 from rental_properties_app.amenities.update_amenities import UpdateAmenities
+from rental_properties_app.availability.update_availability import UpdateAvailability
 from rental_properties_app.checkin_checkout.checkin_checkout import CheckinCheckout
 from rental_properties_app.description.save_description import SaveDescription
 from rental_properties_app.models import Amenities, Propertybasicinfo
 from rental_properties_app.rental_properties import pull_amenities, pull_list_of_properties_from_ru, pull_property_types
 # from rental_properties_app.decorators import access_authorized_users_only
-# from rental_properties_app.models import Propertyinfo
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
@@ -75,6 +75,10 @@ def sync_properties_from_rental(request):
                     property_info.save()
                     logger.info(
                         f"Property basic info saved in database successfully.")
+                    availability_obj = UpdateAvailability()
+                    availability_obj.update_availability(property_info)
+                    logger.info(
+                        f"Property availability saved in database successfully.")
 
                     # save description in db
                     basic_info_db_obj = Propertybasicinfo.objects.get(property_id = data_dict.get('property_id'))
