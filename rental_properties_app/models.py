@@ -67,17 +67,17 @@ class Propertycharges(models.Model):
     propertyinfo = models.ForeignKey(
         Propertybasicinfo, on_delete=models.CASCADE, null=True)
     kind = models.CharField(null=True, max_length=50)
-    calculation_type = models.CharField(null=True, max_length=50)
-    collection_time = models.CharField(null=True, max_length=50)
     value = models.FloatField(null=True)
     is_optional = models.BooleanField(default=0)
-    down_payment_type = models.CharField(null=True, max_length=50)
     down_payment_amount = models.FloatField(null=True)
-    security_deposit_type = models.CharField(null=True, max_length=50)
     security_deposit_amount = models.FloatField(null=True)
-    extra_charge_type = models.CharField(null=True, max_length=50)
     name = models.CharField(null=True, max_length=50)
     applied_to = models.CharField(null=True, max_length=50)
+    extra_charge_type_id = models.IntegerField(null=True)
+    calculation_type_id = models.IntegerField(null=True)
+    collection_time_id = models.IntegerField(null=True)
+    down_payment_type_id = models.IntegerField(null=True)
+    security_deposit_type_id = models.IntegerField(null=True)
 
     class Meta:
         db_table = "property_charges"
