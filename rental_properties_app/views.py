@@ -3,14 +3,14 @@ from rental_properties_app.availability.update_availability import UpdateAvailab
 from rental_properties_app.checkin_checkout.checkin_checkout import CheckinCheckout
 from rental_properties_app.description.save_description import SaveDescription
 from rental_properties_app.models import Amenities, Propertybasicinfo
+from rental_properties_app.charge_profile.update_charge_profile import UpdateChargeProfile
+from rental_properties_app.property_images.update_property_images import UpdatePropertyImages
 from rental_properties_app.rental_properties import pull_amenities, pull_list_of_properties_from_ru, pull_property_types
-# from rental_properties_app.decorators import access_authorized_users_only
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from rental_properties_app.response import Responsehandler
 from logger_setup import logger
-import datetime
 
 response_handler = Responsehandler()
 save_description_obj = SaveDescription()
@@ -28,16 +28,21 @@ def sync_properties_from_rental(request):
 
             for data_dict in data_dicts:
 
+                print("-----------property_id---------", data_dict.get('property_id'))
                 # fetch values.
                 list_of_details = data_dict.get('Pull_ListSpecProp_RS')
+                # print("-----------list_of_details---------", list_of_details)
                 property = list_of_details.get('Property')
-                rental_united_id = property.get('rental_united_id', None)
+                # if data_dict.get('property_id') == '3590593':
+                #     property_images_obj = UpdatePropertyImages()
+                #     property_images_obj.update_property_images(property)
+                #     break
+                # else:
+                #     property_images_obj = UpdatePropertyImages()
+                #     property_images_obj.update_property_images(property)
+                #     continue
                 d_location = property.get('DetailedLocationID')
                 coordinates = property.get('Coordinates')
-                arrival_instructions = property.get('ArrivalInstructions')
-                checkin_out = property.get('CheckInOut')
-                deposit = property.get('Deposit')
-                security_deposit = property.get('SecurityDeposit')
 
                 # save amenities in db
                 amenities = property.get('Amenities')
@@ -75,10 +80,20 @@ def sync_properties_from_rental(request):
                     property_info.save()
                     logger.info(
                         f"Property basic info saved in database successfully.")
+
+                    # save availability in db
                     availability_obj = UpdateAvailability()
                     availability_obj.update_availability(property_info)
                     logger.info(
                         f"Property availability saved in database successfully.")
+
+                    # save charge profile in db
+                    charge_profile_obj = UpdateChargeProfile()
+                    charge_profile_obj.update_charge_profile(property, property_info)
+
+                    # save images in db
+                    property_images_obj = UpdatePropertyImages()
+                    property_images_obj.update_property_images(property, property_info)
 
                     # save description in db
                     basic_info_db_obj = Propertybasicinfo.objects.get(property_id = data_dict.get('property_id'))
