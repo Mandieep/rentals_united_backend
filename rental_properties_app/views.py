@@ -150,25 +150,6 @@ def save_amenities_in_db(request):
         return Response(exception_dict, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@api_view(['GET'])
-def listing_of_properties(request):
-    """
-        For 'GET' request-> return records from property
-
-    """
-    try:
-        table_grp_row_obj = Propertybasicinfo.objects.all()
-        serializer = PropertyAllInfoSerializer(table_grp_row_obj, many=True)
-        response_dict = response_handler.success_response(
-            serializer.data, 200)
-        return Response(response_dict, status.HTTP_200_OK)
-
-    except Exception as e:
-        logger.exception(
-            f"error in function listing_of_properties")
-        exception_dict = {"message": str(e), "status": 500}
-        return Response(exception_dict, status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 @api_view(['POST'])
 def listing_of_properties(request):
     """

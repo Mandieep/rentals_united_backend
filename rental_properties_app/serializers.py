@@ -78,9 +78,8 @@ class PropertyAllInfoSerializer(serializers.ModelSerializer):
         fields = ('id', 'property_id', 'group', 'property_name', 'property_type', 'can_sleep_max',
                   'floor', 'size', 'street', 'zip_code', 'latitude', 'longitude',
                   'detailed_location', 'detailed_location_id', 'license_number', 'license_toggle',
-                  'available_prices', 'amenities', 'images', 'charges', 'property_rental_created_at',
-                  'property_rental_updated_at',
-                    'checkin_checkout', 'created_at', 'updated_at'
+                  'created_at', 'updated_at','property_rental_created_at', 'property_rental_updated_at',
+                  'available_prices', 'amenities', 'images', 'charges','checkin_checkout'
                      )
 
 

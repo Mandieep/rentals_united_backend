@@ -20,7 +20,7 @@ class PropertiesListings():
             table_property_data = table_property_data.order_by(
                 order_by_param)
 
-        elif id is not None and created_at is None:
+        elif id is None and created_at is not None:
             order_by_param = 'property_rental_created_at'
             if created_at == 'desc':
                 order_by_param = '-property_rental_created_at'
