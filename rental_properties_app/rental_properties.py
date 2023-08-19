@@ -172,6 +172,39 @@ def pull_amenities():
     data_dict = xmltodict.parse(response)
     return data_dict
 
+def pull_composition_rooms():
+    xml_payload = f"""
+
+                    <Pull_ListCompositionRooms_RQ>
+                        <Authentication>
+                        <UserName>{os.getenv('RU_USERNAME')}</UserName>
+                        <Password>{os.getenv('RU_PASSWORD')}</Password>
+                        </Authentication>
+                    </Pull_ListCompositionRooms_RQ>
+
+                    """
+    # Call the function to make the XML request
+    response = make_xml_request(xml_payload)
+    data_dict = xmltodict.parse(response)
+    return data_dict
+
+def pull_locations():
+    xml_payload = f"""
+            <Pull_ListLocations_RQ>
+                <Authentication>
+                    <UserName>{os.getenv('RU_USERNAME')}</UserName>
+                    <Password>{os.getenv('RU_PASSWORD')}</Password>
+                </Authentication>
+            </Pull_ListLocations_RQ>
+
+                    """
+    # Call the function to make the XML request
+    response = make_xml_request(xml_payload)
+    data_dict = xmltodict.parse(response)
+    return data_dict
+
+
+
 
 
 

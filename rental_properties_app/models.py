@@ -9,6 +9,14 @@ class Amenities(models.Model):
     class Meta:
         db_table = "property_amenities"
 
+class CompositionRooms(models.Model):
+    composition_room = models.CharField(max_length=255)
+    composition_id = models.IntegerField(null=True)
+    property_id = models.TextField(null=True)
+
+    class Meta:
+        db_table = "property_composition_rooms"
+
 class Propertybasicinfo(models.Model):
     property_id = models.IntegerField(null=True)
     property_name = models.CharField(max_length=50)

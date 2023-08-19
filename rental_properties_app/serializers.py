@@ -1,4 +1,4 @@
-from rental_properties_app.models import Amenities, Propertyavailabilityprices, Propertybasicinfo, Propertycharges, Propertycheckincheckout, Propertydescription, Propertyimages
+from rental_properties_app.models import Amenities, CompositionRooms, Propertyavailabilityprices, Propertybasicinfo, Propertycharges, Propertycheckincheckout, Propertydescription, Propertyimages
 from rest_framework import serializers
 
 
@@ -10,6 +10,11 @@ class PropertyBasicInfoSerializer(serializers.ModelSerializer):
 class AmenitiesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Amenities
+        fields = '__all__'
+
+class CompositionRoomsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CompositionRooms
         fields = '__all__'
 
 class PropertyImagesSerializer(serializers.ModelSerializer):
@@ -52,10 +57,14 @@ class PropertyAllInfoSerializer(serializers.ModelSerializer):
     images = serializers.SerializerMethodField()
     charges = serializers.SerializerMethodField()
     checkin_checkout = serializers.SerializerMethodField()
+    composition_rooms = serializers.SerializerMethodField()
 
     def query_amenities_data(self, obj):
-        listing_obj = Amenities.objects.filter(property_id=obj.property_id)
+        listing_obj = Amenities.objects.filter(property_id__contains=obj.property_id)
         return AmenitiesSerializer(listing_obj, many=True).data
+    def query_comp_rooms_data(self, obj):
+        listing_obj = CompositionRooms.objects.filter(property_id__contains=obj.property_id)
+        return CompositionRoomsSerializer(listing_obj, many=True).data
 
     def get_available_prices(self, obj):
         obj = Propertyavailabilityprices.objects.filter(propertyinfo=obj.id)
@@ -63,6 +72,9 @@ class PropertyAllInfoSerializer(serializers.ModelSerializer):
     def get_amenities(self, obj):
         secondary_data = self.query_amenities_data(obj)
         return secondary_data
+    def get_composition_rooms(self, obj):
+        secondary_data2 = self.query_comp_rooms_data(obj)
+        return secondary_data2
     def get_images(self, obj):
         obj = Propertyimages.objects.filter(propertyinfo=obj.id)
         return PropertyImagesSerializer(obj, many=True).data
@@ -79,7 +91,7 @@ class PropertyAllInfoSerializer(serializers.ModelSerializer):
                   'floor', 'size', 'street', 'zip_code', 'latitude', 'longitude',
                   'detailed_location', 'detailed_location_id', 'license_number', 'license_toggle',
                   'created_at', 'updated_at','property_rental_created_at', 'property_rental_updated_at',
-                  'available_prices', 'amenities', 'images', 'charges','checkin_checkout'
+                  'available_prices', 'composition_rooms', 'amenities', 'images', 'charges','checkin_checkout'
                      )
 
 
