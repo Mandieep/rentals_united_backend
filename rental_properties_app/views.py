@@ -3,7 +3,9 @@ from rental_properties_app.availability.update_availability import UpdateAvailab
 from rental_properties_app.checkin_checkout.checkin_checkout import CheckinCheckout
 from rental_properties_app.description.save_description import SaveDescription
 from rental_properties_app.models import Amenities, Propertybasicinfo
+from rental_properties_app.properties.properties_listings import PropertiesListings
 from rental_properties_app.rental_properties import pull_amenities, pull_list_of_properties_from_ru, pull_property_types
+from rental_properties_app.serializers import PropertyAllInfoSerializer
 # from rental_properties_app.decorators import access_authorized_users_only
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -11,6 +13,7 @@ from rest_framework import status
 from rental_properties_app.response import Responsehandler
 from logger_setup import logger
 import datetime
+import math
 
 response_handler = Responsehandler()
 save_description_obj = SaveDescription()
@@ -27,12 +30,16 @@ def sync_properties_from_rental(request):
             data_dicts = pull_list_of_properties_from_ru()
 
             for data_dict in data_dicts:
+                print('data_dict............', data_dict)
 
                 # fetch values.
                 list_of_details = data_dict.get('Pull_ListSpecProp_RS')
                 property = list_of_details.get('Property')
                 rental_united_id = property.get('rental_united_id', None)
                 d_location = property.get('DetailedLocationID')
+                rental_created_at = property.get('DateCreated')
+                last_mod = property.get('LastMod')
+                rental_updated_at = last_mod.get('#text')
                 coordinates = property.get('Coordinates')
                 arrival_instructions = property.get('ArrivalInstructions')
                 checkin_out = property.get('CheckInOut')
@@ -69,9 +76,9 @@ def sync_properties_from_rental(request):
                         can_sleep_max=property.get('CanSleepMax'), floor=property.get('Floor'),
                         size=property.get('Space'), street=property.get('Street'), zip_code=property.get('ZipCode'),
                         longitude=coordinates.get('Longitude'), latitude=coordinates.get('Latitude'),
-                        detailed_location=d_location.get('#text'),
-                        detailed_location_id=d_location.get('@TypeID'),
-                        license_number=property.get('LicenseNumber'), license_toggle=1)
+                        detailed_location=d_location.get('#text'), property_rental_updated_at=rental_updated_at,
+                        detailed_location_id=d_location.get('@TypeID'), property_rental_created_at=rental_created_at,
+                        license_number=property.get('LicenseNumber'), group=property.get('Name').split('-')[0], license_toggle=1)
                     property_info.save()
                     logger.info(
                         f"Property basic info saved in database successfully.")
@@ -139,5 +146,84 @@ def save_amenities_in_db(request):
     except Exception as e:
         logger.exception(
             f"error in function save_amenities_in_db")
+        exception_dict = {"message": str(e), "status": 500}
+        return Response(exception_dict, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+def listing_of_properties(request):
+    """
+        For 'GET' request-> return records from property
+
+    """
+    try:
+        table_grp_row_obj = Propertybasicinfo.objects.all()
+        serializer = PropertyAllInfoSerializer(table_grp_row_obj, many=True)
+        response_dict = response_handler.success_response(
+            serializer.data, 200)
+        return Response(response_dict, status.HTTP_200_OK)
+
+    except Exception as e:
+        logger.exception(
+            f"error in function listing_of_properties")
+        exception_dict = {"message": str(e), "status": 500}
+        return Response(exception_dict, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def listing_of_properties(request):
+    """
+    Get listing (data) of all properties from database.
+
+    Args:
+        request (object): request.
+
+    """
+
+    try:
+        if request.method == 'POST':
+            json_data = request.data
+            current_page = json_data.get('page')
+            filters = json_data.get('filters')
+            limit = json_data.get('limit', 10)
+            sort = json_data.get('sort')
+
+            table_property_data = Propertybasicinfo.objects.all()
+
+            # fitering.
+            if filters is not None and filters != {}:
+                name_filter = filters.get('property_name')
+                table_property_data = Propertybasicinfo.objects.filter(
+                    property_name__icontains=name_filter)
+
+            # get total records after filtering.
+            total_records = len(table_property_data)
+
+            listing_obj = PropertiesListings()
+            # sorting
+            if sort is not None:
+                table_property_data = listing_obj.listing_sorting(
+                    sort, table_property_data)
+
+            # pagination.
+            table_property_data, page_number = listing_obj.listing_pagnation(
+                table_property_data, limit, current_page)
+
+            serializer_data = PropertyAllInfoSerializer(
+                table_property_data, many=True)
+
+            response_dict = response_handler.success_response(
+                serializer_data.data, 200)
+            response_dict["response_meta"] = {
+                "pagination": {
+                    "total": total_records,
+                    "current_page": page_number,
+                    "total_pages": math.ceil(total_records/limit),
+                }
+            }
+
+            return Response(response_dict, status.HTTP_200_OK)
+    except Exception as e:
+        logger.exception(
+            f"error in function listing_of_properties")
         exception_dict = {"message": str(e), "status": 500}
         return Response(exception_dict, status.HTTP_500_INTERNAL_SERVER_ERROR)
