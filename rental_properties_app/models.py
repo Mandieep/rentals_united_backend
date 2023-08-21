@@ -9,9 +9,18 @@ class Amenities(models.Model):
     class Meta:
         db_table = "property_amenities"
 
+class CompositionRooms(models.Model):
+    composition_room = models.CharField(max_length=255)
+    composition_id = models.IntegerField(null=True)
+    property_id = models.TextField(null=True)
+
+    class Meta:
+        db_table = "property_composition_rooms"
+
 class Propertybasicinfo(models.Model):
     property_id = models.IntegerField(null=True)
     property_name = models.CharField(max_length=50)
+    group = models.CharField(max_length=50, null=True)
     property_type = models.CharField(max_length=50)
     can_sleep_max = models.IntegerField(null=True)
     floor = models.IntegerField(null=True)
@@ -24,6 +33,8 @@ class Propertybasicinfo(models.Model):
     detailed_location_id = models.IntegerField(null=True)
     license_number = models.CharField(max_length=50, null=True)
     license_toggle = models.BooleanField(default=False)
+    property_rental_created_at = models.DateTimeField(null=True)
+    property_rental_updated_at = models.DateTimeField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -42,7 +53,7 @@ class Propertydescription(models.Model):
 class Propertyimages(models.Model):
     propertyinfo = models.ForeignKey(
         Propertybasicinfo, on_delete=models.CASCADE, null=True)
-    image = models.ImageField(upload_to="images", null=True)
+    image = models.ImageField(upload_to="images", max_length=255, null=True)
     image_type = models.CharField(max_length=50, null=True)
     image_descriptions = models.JSONField(null=True)
     language = models.CharField(max_length=50, null=True)
@@ -103,3 +114,4 @@ class Propertycheckincheckout(models.Model):
 
     class Meta:
         db_table = "property_checkin_checkout"
+

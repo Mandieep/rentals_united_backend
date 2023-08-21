@@ -1,16 +1,22 @@
 from rental_properties_app.amenities.update_amenities import UpdateAmenities
 from rental_properties_app.availability.update_availability import UpdateAvailability
 from rental_properties_app.checkin_checkout.checkin_checkout import CheckinCheckout
+from rental_properties_app.composition_rooms.composition_rooms import UpdateCompositionRooms
 from rental_properties_app.description.save_description import SaveDescription
-from rental_properties_app.models import Amenities, Propertybasicinfo
+from rental_properties_app.models import Amenities, Propertybasicinfo, CompositionRooms
 from rental_properties_app.charge_profile.update_charge_profile import UpdateChargeProfile
 from rental_properties_app.property_images.update_property_images import UpdatePropertyImages
 from rental_properties_app.rental_properties import pull_amenities, pull_list_of_properties_from_ru, pull_property_types
+from rental_properties_app.properties.properties_listings import PropertiesListings
+from rental_properties_app.rental_properties import pull_amenities, pull_composition_rooms, pull_list_of_properties_from_ru, pull_property_types
+from rental_properties_app.serializers import PropertyAllInfoSerializer
+# from rental_properties_app.decorators import access_authorized_users_only
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from rental_properties_app.response import Responsehandler
 from logger_setup import logger
+import math
 
 response_handler = Responsehandler()
 save_description_obj = SaveDescription()
@@ -33,15 +39,10 @@ def sync_properties_from_rental(request):
                 list_of_details = data_dict.get('Pull_ListSpecProp_RS')
                 # print("-----------list_of_details---------", list_of_details)
                 property = list_of_details.get('Property')
-                # if data_dict.get('property_id') == '3590593':
-                #     property_images_obj = UpdatePropertyImages()
-                #     property_images_obj.update_property_images(property)
-                #     break
-                # else:
-                #     property_images_obj = UpdatePropertyImages()
-                #     property_images_obj.update_property_images(property)
-                #     continue
                 d_location = property.get('DetailedLocationID')
+                rental_created_at = property.get('DateCreated')
+                last_mod = property.get('LastMod')
+                rental_updated_at = last_mod.get('#text')
                 coordinates = property.get('Coordinates')
 
                 # save amenities in db
@@ -74,9 +75,9 @@ def sync_properties_from_rental(request):
                         can_sleep_max=property.get('CanSleepMax'), floor=property.get('Floor'),
                         size=property.get('Space'), street=property.get('Street'), zip_code=property.get('ZipCode'),
                         longitude=coordinates.get('Longitude'), latitude=coordinates.get('Latitude'),
-                        detailed_location=d_location.get('#text'),
-                        detailed_location_id=d_location.get('@TypeID'),
-                        license_number=property.get('LicenseNumber'), license_toggle=1)
+                        detailed_location=d_location.get('#text'), property_rental_updated_at=rental_updated_at,
+                        detailed_location_id=d_location.get('@TypeID'), property_rental_created_at=rental_created_at,
+                        license_number=property.get('LicenseNumber'), group=property.get('Name').split('-')[0], license_toggle=1)
                     property_info.save()
                     logger.info(
                         f"Property basic info saved in database successfully.")
@@ -115,6 +116,24 @@ def sync_properties_from_rental(request):
                     # save checkin checkout in db.
                     checkin_checkout_obj.save_checkin_checkout(basic_info_db_obj, property)
 
+                    # save amenities in db
+                    amenities = property.get('Amenities')
+                    amenty = None
+                    if amenities is not None:
+                        amenty = amenities.get('Amenity')
+                    if amenty is not None:
+                        if type(amenty)== list:
+                            amenity_ids = [i.get('#text') for i in amenty]
+                        else:
+                            amenity_ids = [amenty.get('#text')]
+                        update_amenity_obj = UpdateAmenities()
+                        update_amenity_obj.update_property_ids(amenity_ids, data_dict.get('property_id'))
+
+                    # save composition_rooms in db
+                    composition_obj = UpdateCompositionRooms()
+                    composition_obj.update_composition_rooms(property, data_dict.get('property_id'))
+                    break
+
             response_dict = response_handler.success_response(
                         True, 200)
             return Response(response_dict, status.HTTP_200_OK)
@@ -128,7 +147,7 @@ def sync_properties_from_rental(request):
 @api_view(['GET'])
 def save_amenities_in_db(request):
     """
-        For 'GET' request-> return records from property
+        For 'GET' request-> save amenities
 
     """
     try:
@@ -150,6 +169,114 @@ def save_amenities_in_db(request):
             response_dict = response_handler.success_response(
                         True, 200)
             return Response(response_dict, status.HTTP_200_OK)
+
+    except Exception as e:
+        logger.exception(
+            f"error in function save_amenities_in_db")
+        exception_dict = {"message": str(e), "status": 500}
+        return Response(exception_dict, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def save_composition_rooms_in_db(request):
+    """
+        For 'GET' request-> save composition rooms
+
+    """
+    try:
+        if request.method == 'GET':
+            comp_rooms_dict = pull_composition_rooms()
+            comp_rooms_rs = comp_rooms_dict.get('Pull_ListCompositionRooms_RS')
+            comp_rooms = comp_rooms_rs.get('CompositionRooms')
+            comp_rooms_list = comp_rooms.get('CompositionRoom')
+            comp_rooms_instances = []
+            db_comp_rooms = CompositionRooms.objects.all()
+            comp_room_ids = [int(comp_room.composition_id) for comp_room in db_comp_rooms]
+            for comp_room in comp_rooms_list:
+                if int(comp_room.get('@CompositionRoomID')) in comp_room_ids:
+                    continue
+                comp_room_ins = CompositionRooms(composition_id = comp_room.get('@CompositionRoomID'), composition_room = comp_room.get('#text'))
+                comp_rooms_instances.append(comp_room_ins)
+            CompositionRooms.objects.bulk_create(comp_rooms_instances)
+
+            response_dict = response_handler.success_response(
+                        True, 200)
+            return Response(response_dict, status.HTTP_200_OK)
+
+    except Exception as e:
+        logger.exception(
+            f"error in function save_composition_rooms_in_db")
+        exception_dict = {"message": str(e), "status": 500}
+        return Response(exception_dict, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+def listing_of_properties(request):
+    """
+    Get listing (data) of all properties from database.
+
+    Args:
+        request (object): request.
+
+    """
+
+    try:
+        if request.method == 'POST':
+            json_data = request.data
+            current_page = json_data.get('page')
+            filters = json_data.get('filters')
+            limit = json_data.get('limit', 10)
+            sort = json_data.get('sort')
+
+            table_property_data = Propertybasicinfo.objects.all()
+
+            # fitering.
+            if filters is not None and filters != {}:
+                name_filter = filters.get('property_name')
+                table_property_data = Propertybasicinfo.objects.filter(
+                    property_name__icontains=name_filter)
+
+            # get total records after filtering.
+            total_records = len(table_property_data)
+
+            listing_obj = PropertiesListings()
+            # sorting
+            if sort is not None:
+                table_property_data = listing_obj.listing_sorting(
+                    sort, table_property_data)
+
+            # pagination.
+            table_property_data, page_number = listing_obj.listing_pagnation(
+                table_property_data, limit, current_page)
+
+            serializer_data = PropertyAllInfoSerializer(
+                table_property_data, many=True)
+
+            response_dict = response_handler.success_response(
+                serializer_data.data, 200)
+            response_dict["response_meta"] = {
+                "pagination": {
+                    "total": total_records,
+                    "current_page": page_number,
+                    "total_pages": math.ceil(total_records/limit),
+                }
+            }
+
+            return Response(response_dict, status.HTTP_200_OK)
+    except Exception as e:
+        logger.exception(
+            f"error in function listing_of_properties")
+        exception_dict = {"message": str(e), "status": 500}
+        return Response(exception_dict, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def create_property(request):
+    """
+        For 'POST' request-> create records from property
+
+    """
+    try:
+        if request.method == 'POST':
+            pass
 
     except Exception as e:
         logger.exception(
