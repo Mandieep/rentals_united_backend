@@ -53,7 +53,7 @@ class Propertydescription(models.Model):
 class Propertyimages(models.Model):
     propertyinfo = models.ForeignKey(
         Propertybasicinfo, on_delete=models.CASCADE, null=True)
-    image = models.ImageField(upload_to="images", null=True)
+    image = models.ImageField(upload_to="images", max_length=255, null=True)
     image_type = models.CharField(max_length=50, null=True)
     image_descriptions = models.JSONField(null=True)
     language = models.CharField(max_length=50, null=True)
